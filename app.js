@@ -1,38 +1,65 @@
-var emitter = require('./emitter');
-var eventConfig = require('./config').events;
+const fs = require('fs');
+const zlib = require('zlib');
 
-// ************************************
-var emtr = emitter();
+// ***************************************
+// Setting encoding
+var buffer8 = Buffer.from('Hello');
+var buffer16 = Buffer.from('Hello', 'utf16le');
 
-emtr.on(eventConfig.GREET, function() {
-    console.log('A greeting event has been triggered');
-});
+console.log(buffer8);
+console.log(buffer16);
 
-emtr.on(eventConfig.GREET, function() {
-    console.log('Hi back at ya');
-});
+// common methods
+console.log(buffer8.toString());
+console.log(buffer8.toJSON());
+buffer8.write('J');
+console.log(buffer8.toString());
 
-emtr.emit(eventConfig.GREET);
-    //> A greeting event has been triggered
-    //> Hi back at ya
+// ***************************************
+// module objects
+console.log(__dirname);
+    // /Users/gregorymaj/projects/node-basics
+console.log(__filename);
+    // /Users/gregorymaj/projects/node-basics/app.js
 
-// ************************************
-var deutschHello = {
-    hello: 'Tschus Freund!'
-}
+// reading a file synchronously
+const test = fs.readFileSync(__dirname + '/test.txt');
 
-var greet = {
-    greet: function() {
-        console.log(this.hello);
-        this.emit(eventConfig.GREET);
-    }
-}
+console.log(test.toString());
 
-var Hanz = Object.assign({}, deutschHello, greet, Object.getPrototypeOf(emtr));
-Hanz.on(eventConfig.GREET, () => {
-    console.log('Hi Friend = ' + Hanz.hello);
+// reading a file asynchronously
+fs.readFile(__dirname + '/test.txt', (err, data) => {
+    console.log(data.toString());
 })
 
-Hanz.greet();
-// ************************************
+// ***************************************
+// using a readable stream
+const readStream = fs.createReadStream(__dirname + '/long.txt', {
+    encoding: 'utf8',
+    highWaterMark: 2 * 1024
+});
+
+// using a writable stream
+const writeStream = fs.createWriteStream(__dirname + '/other.txt', {
+    encoding: 'utf8',
+    highWaterMark: 2 * 1024 // Stream size = 2 KB
+});
+
+// callback execution when buffer is filled
+readStream.on('data', (chunk) => {
+    writeStream.write(chunk);
+    writeStream.write('***************************************');
+})
+
+// using pipe for the above
+const writer = fs.createWriteStream(__dirname + '/pipeTo.txt');
+
+readStream.pipe(writer);
+
+// gzip a file
+const writeCompressed = fs.createWriteStream(__dirname + '/compress.txt.gz')
+
+const gzip = zlib.createGzip();
+
+readStream.pipe(gzip).pipe(writeCompressed);
 
